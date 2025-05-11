@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LEVEL Permainan Rama-rama</title>
+  <title>180 Permainan Rama-rama</title>
   <style>
     html, body {
       height: 100%;
@@ -51,7 +51,6 @@
       border-radius: 16px;
       display: none;
       z-index: 10001;
-      text-align: center;
     }
 
     #startScreen {
@@ -76,19 +75,24 @@
       margin-bottom: 20px;
     }
 
-    #levelButtons button {
+    #startScreen p {
+      font-size: 18px;
+      margin: 8px 0;
+    }
+
+    .levelButton {
       margin: 10px;
       padding: 12px 24px;
       font-size: 20px;
       border: none;
       border-radius: 8px;
-      background-color: #2196f3;
+      background-color: #00c853;
       color: white;
       cursor: pointer;
     }
 
-    #levelButtons button:hover {
-      background-color: #1976d2;
+    .levelButton:hover {
+      background-color: #00b342;
     }
 
     #pointerImg {
@@ -127,33 +131,27 @@
     <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
     <p>🎯 Sentuh rama-rama untuk mendapatkan poin</p>
     <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
-    <div id="levelButtons">
-      <button onclick="startGame(1)">Level 1</button>
-      <button onclick="startGame(2)">Level 2</button>
-      <button onclick="startGame(3)">Level 3</button>
-    </div>
+    <button class="levelButton" onclick="startGame(1)">Tahap 1</button>
+    <button class="levelButton" onclick="startGame(2)">Tahap 2</button>
+    <button class="levelButton" onclick="startGame(3)">Tahap 3</button>
   </div>
 
   <div class="score">Skor: <span id="score">0</span></div>
   <div class="timer">Masa: <span id="time">180</span>s</div>
-  <div id="gameover" class="gameover"></div>
+  <div id="gameover" class="gameover">Cuba Lagi.</div>
 
   <img id="pointerImg" src="hand-cursor.png">
   <div id="pointerLabel">x: 0 y: 0</div>
-
-  <img src="butterfly-tran.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
+  <img id="butterfly" class="obj" src="butterfly-tran.gif" style="display:none;" />
   <img id="hitEffect" src="sparkle.gif" />
 
   <audio id="popSound" src="pop.mp3" preload="auto"></audio>
   <audio id="bgMusic" src="lagu.mp3" loop preload="auto"></audio>
 
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-
   <script>
     const pointerImg = document.getElementById('pointerImg');
     const pointerLabel = document.getElementById('pointerLabel');
-    const objs = [...document.querySelectorAll('.obj')];
+    const butterfly = document.getElementById('butterfly');
     const scoreDisplay = document.getElementById('score');
     const timeDisplay = document.getElementById('time');
     const gameOverText = document.getElementById('gameover');
@@ -167,8 +165,7 @@
     let gameActive = false;
     let countdown;
     let currentLevel = 1;
-    let butterflyTimeout;
-    let butterflyElement;
+    let butterflyTimer;
     let moveInterval;
 
     const video = document.createElement('video');
@@ -203,43 +200,26 @@
         pointerLabel.style.top = `${y + 10}px`;
         pointerLabel.textContent = `x: ${Math.round(x)} y: ${Math.round(y)}`;
 
-        const targets = currentLevel === 1 ? objs : (butterflyElement ? [butterflyElement] : []);
-        targets.forEach((el) => {
-          const rect = el.getBoundingClientRect();
-          const dx = x - rect.left;
-          const dy = y - rect.top;
-          if (Math.hypot(dx, dy) < 50) {
-            const action = el.dataset.action;
-            if (action === 'move') {
-              if (currentLevel === 1) {
-                const newX = Math.random() * (window.innerWidth - 64);
-                const newY = Math.random() * (window.innerHeight - 64);
-                el.style.left = newX + 'px';
-                el.style.top = newY + 'px';
-              } else {
-                el.remove();
-                butterflyElement = null;
-                clearInterval(moveInterval);
-                clearTimeout(butterflyTimeout);
-                if (currentLevel >= 2) spawnButterfly();
-              }
+        const rect = butterfly.getBoundingClientRect();
+        const dx = x - rect.left;
+        const dy = y - rect.top;
+        if (Math.hypot(dx, dy) < 50 && butterfly.style.display !== 'none') {
+          butterfly.style.display = 'none';
+          clearTimeout(butterflyTimer);
+          clearInterval(moveInterval);
 
-              score += 1;
-              scoreDisplay.textContent = score;
-              popSound.currentTime = 0;
-              popSound.play();
+          score++;
+          scoreDisplay.textContent = score;
+          popSound.currentTime = 0;
+          popSound.play();
+          hitEffect.style.left = `${x - 40}px`;
+          hitEffect.style.top = `${y - 40}px`;
+          hitEffect.style.display = 'block';
+          setTimeout(() => hitEffect.style.display = 'none', 500);
 
-              hitEffect.style.left = (x - 40) + 'px';
-              hitEffect.style.top = (y - 40) + 'px';
-              hitEffect.style.display = 'block';
-              setTimeout(() => hitEffect.style.display = 'none', 500);
-
-              if (score >= 10) {
-                endGame("TAHNIAH! Anda berjaya.");
-              }
-            }
-          }
-        });
+          if (score >= 10) endGame("TAHNIAH. Anda berjaya.");
+          else if (currentLevel > 1) spawnButterfly();
+        }
       }
     });
 
@@ -249,7 +229,7 @@
       height: 480,
     }).start();
 
-    function startGame(level = 1) {
+    function startGame(level) {
       currentLevel = level;
       startScreen.style.display = 'none';
       score = 0;
@@ -261,85 +241,65 @@
       bgMusic.currentTime = 0;
       bgMusic.play();
 
-      if (level > 1) {
-        objs.forEach((el) => el.style.display = 'none');
-        spawnButterfly();
-      }
-
       countdown = setInterval(() => {
         if (!gameActive) return;
         timeLeft++;
         timeDisplay.textContent = timeLeft;
-
-        if (timeLeft >= 180) {
-          endGame("Masa Tamat. Cuba lagi.");
-        }
+        if (timeLeft >= 180) endGame("Cuba lagi");
       }, 1000);
+
+      if (level > 1) spawnButterfly();
+    }
+
+    function spawnButterfly() {
+      butterfly.style.display = 'block';
+      const x = Math.random() * (window.innerWidth - 64);
+      const y = Math.random() * (window.innerHeight - 64);
+      butterfly.style.left = `${x}px`;
+      butterfly.style.top = `${y}px`;
+
+      if (currentLevel === 2) {
+        butterflyTimer = setTimeout(() => butterfly.style.display = 'none', 2000);
+      }
+
+      if (currentLevel === 3) {
+        moveInterval = setInterval(() => {
+          let dir = Math.floor(Math.random() * 4);
+          let dx = 0, dy = 0;
+          if (dir === 0) dx = 10;
+          if (dir === 1) dx = -10;
+          if (dir === 2) dy = 10;
+          if (dir === 3) dy = -10;
+
+          const curX = parseFloat(butterfly.style.left);
+          const curY = parseFloat(butterfly.style.top);
+          const newX = Math.min(Math.max(0, curX + dx), window.innerWidth - 64);
+          const newY = Math.min(Math.max(0, curY + dy), window.innerHeight - 64);
+          butterfly.style.left = `${newX}px`;
+          butterfly.style.top = `${newY}px`;
+        }, 300);
+      }
     }
 
     function endGame(message) {
       clearInterval(countdown);
+      clearTimeout(butterflyTimer);
       clearInterval(moveInterval);
-      clearTimeout(butterflyTimeout);
-      if (butterflyElement) {
-        butterflyElement.remove();
-        butterflyElement = null;
-      }
-
-      gameOverText.innerHTML = `${message}<br><br><button onclick="location.reload()">Kembali ke Mula</button>`;
+      butterfly.style.display = 'none';
+      gameOverText.textContent = message;
       gameOverText.style.display = 'block';
       gameActive = false;
       bgMusic.pause();
-    }
 
-    function spawnButterfly() {
-      if (!gameActive || currentLevel === 1) return;
-
-      if (butterflyElement) {
-        document.body.removeChild(butterflyElement);
-        butterflyElement = null;
-        clearTimeout(butterflyTimeout);
-        clearInterval(moveInterval);
-      }
-
-      butterflyElement = document.createElement("img");
-      butterflyElement.src = "butterfly-tran.gif";
-      butterflyElement.className = "obj";
-      butterflyElement.dataset.action = "move";
-
-      const x = Math.random() * (window.innerWidth - 64);
-      const y = Math.random() * (window.innerHeight - 64);
-      butterflyElement.style.left = `${x}px`;
-      butterflyElement.style.top = `${y}px`;
-
-      document.body.appendChild(butterflyElement);
-
-      butterflyTimeout = setTimeout(() => {
-        if (gameActive && currentLevel >= 2) {
-          if (butterflyElement) {
-            document.body.removeChild(butterflyElement);
-            butterflyElement = null;
-            if (currentLevel === 2) spawnButterfly();
-          }
-        }
-      }, 2000);
-
-      if (currentLevel === 3) {
-        moveInterval = setInterval(() => moveRandomly(butterflyElement), 500);
-      }
-    }
-
-    function moveRandomly(el) {
-      if (!el || !gameActive) return;
-      const dx = (Math.random() - 0.5) * 30;
-      const dy = (Math.random() - 0.5) * 30;
-      let newX = el.offsetLeft + dx;
-      let newY = el.offsetTop + dy;
-
-      newX = Math.max(0, Math.min(newX, window.innerWidth - 64));
-      newY = Math.max(0, Math.min(newY, window.innerHeight - 64));
-      el.style.left = `${newX}px`;
-      el.style.top = `${newY}px`;
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Kembali';
+      backBtn.className = 'levelButton';
+      backBtn.onclick = () => {
+        startScreen.style.display = 'flex';
+        gameOverText.style.display = 'none';
+        backBtn.remove();
+      };
+      gameOverText.appendChild(backBtn);
     }
   </script>
 </body>
