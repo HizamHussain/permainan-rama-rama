@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPARK Permainan Rama-rama</title>
+  <title>Permainan Rama-rama</title>
   <style>
     html, body {
       height: 100%;
@@ -65,7 +65,6 @@
       z-index: 10001;
     }
 
-    /* Skrin permulaan */
     #startScreen {
       position: absolute;
       z-index: 10002;
@@ -137,6 +136,7 @@
   <img id="hitEffect" src="sparkle.gif" />
 
   <audio id="popSound" src="pop.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="lagu.mp3" loop preload="auto"></audio>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -147,6 +147,7 @@
     const timeDisplay = document.getElementById('time');
     const gameOverText = document.getElementById('gameover');
     const popSound = document.getElementById('popSound');
+    const bgMusic = document.getElementById('bgMusic');
     const startScreen = document.getElementById('startScreen');
     const hitEffect = document.getElementById('hitEffect');
 
@@ -177,7 +178,7 @@
       if (!gameActive) return;
 
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmark = results.multiHandLandmarks[0][0]; // tapak tangan
+        const landmark = results.multiHandLandmarks[0][0];
         const x = (1 - landmark.x) * window.innerWidth;
         const y = landmark.y * window.innerHeight;
 
@@ -191,27 +192,20 @@
           if (Math.hypot(dx, dy) < 50) {
             const action = el.dataset.action;
             if (action === 'move') {
-              // Gerakkan rama-rama
               const newX = Math.random() * (window.innerWidth - 64);
               const newY = Math.random() * (window.innerHeight - 64);
               el.style.left = newX + 'px';
               el.style.top = newY + 'px';
 
-              // Tambah skor dan bunyi
               score += 1;
               scoreDisplay.textContent = score;
               popSound.currentTime = 0;
               popSound.play();
 
-              // Tunjuk animasi GIF
               hitEffect.style.left = (x - 40) + 'px';
               hitEffect.style.top = (y - 40) + 'px';
               hitEffect.style.display = 'block';
-
-              // Sembunyi selepas 500ms
-              setTimeout(() => {
-                hitEffect.style.display = 'none';
-              }, 500);
+              setTimeout(() => hitEffect.style.display = 'none', 500);
             }
           }
         });
@@ -232,6 +226,8 @@
       timeDisplay.textContent = timeLeft;
       gameOverText.style.display = 'none';
       gameActive = true;
+      bgMusic.currentTime = 0;
+      bgMusic.play();
 
       countdown = setInterval(() => {
         if (!gameActive) return;
@@ -241,6 +237,7 @@
           clearInterval(countdown);
           gameOverText.style.display = 'block';
           gameActive = false;
+          bgMusic.pause();
         }
       }, 1000);
     }
