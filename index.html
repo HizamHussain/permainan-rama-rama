@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Permainan Kawalan Tangan</title>
+  <title>3 Permainan Kawalan Tangan</title>
   <style>
-    body { margin: 0; overflow: hidden; }
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
     video, canvas { display: none; }
     #pointer {
       position: absolute;
@@ -20,8 +20,16 @@
       height: 50px;
       background: green;
       border-radius: 50%;
-      top: 200px;
-      left: 200px;
+    }
+    #score {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -30,6 +38,7 @@
   <canvas id="canvas"></canvas>
   <div id="pointer"></div>
   <div id="target"></div>
+  <div id="score">Skor: 0</div>
 
   <script type="module">
     import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
@@ -41,9 +50,22 @@
     const ctx = canvas.getContext('2d');
     const pointer = document.getElementById('pointer');
     const target = document.getElementById('target');
+    const scoreDisplay = document.getElementById('score');
 
     canvas.width = 640;
     canvas.height = 480;
+
+    let score = 0;
+    let cooldown = false;
+
+    function randomizeTarget() {
+      const maxX = window.innerWidth - 50;
+      const maxY = window.innerHeight - 50;
+      const x = Math.random() * maxX;
+      const y = Math.random() * maxY;
+      target.style.left = `${x}px`;
+      target.style.top = `${y}px`;
+    }
 
     function onResults(results) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -58,13 +80,18 @@
 
           pointer.style.transform = `translate(${x - 15}px, ${y - 15}px)`;
 
-          // Check collision with target
           const targetRect = target.getBoundingClientRect();
-          if (x > targetRect.left && x < targetRect.right &&
-              y > targetRect.top && y < targetRect.bottom) {
-            target.style.background = 'blue'; // target "clicked"
-          } else {
-            target.style.background = 'green';
+          if (
+            x > targetRect.left && x < targetRect.right &&
+            y > targetRect.top && y < targetRect.bottom
+          ) {
+            if (!cooldown) {
+              score++;
+              scoreDisplay.textContent = `Skor: ${score}`;
+              randomizeTarget();
+              cooldown = true;
+              setTimeout(() => cooldown = false, 700); // rehatkan deteksi 700ms
+            }
           }
         }
       }
@@ -92,6 +119,7 @@
     });
 
     camera.start();
+    randomizeTarget();
   </script>
 </body>
 </html>
