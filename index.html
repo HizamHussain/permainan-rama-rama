@@ -18,18 +18,6 @@
       font-family: sans-serif;
     }
 
-    .pointer {
-      position: absolute;
-      padding: 4px 6px;
-      background: red;
-      color: white;
-      font-size: 12px;
-      border-radius: 6px;
-      z-index: 9999;
-      white-space: pre;
-      cursor: url('hand-cursor.png'), auto;
-    }
-
     .obj {
       position: absolute;
       width: 64px;
@@ -107,6 +95,25 @@
       background-color: #00b342;
     }
 
+    #pointerImg {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    #pointerLabel {
+      position: absolute;
+      font-size: 12px;
+      color: white;
+      background: red;
+      padding: 2px 4px;
+      border-radius: 4px;
+      z-index: 10000;
+      pointer-events: none;
+    }
+
     #hitEffect {
       position: absolute;
       width: 80px;
@@ -118,10 +125,9 @@
   </style>
 </head>
 <body>
-  <!-- Skrin Permulaan -->
   <div id="startScreen">
     <h1>Permainan Rama-rama</h1>
-    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer merah!</p>
+    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer!</p>
     <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
     <p>🎯 Sentuh rama-rama untuk mendapatkan poin</p>
     <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
@@ -129,9 +135,13 @@
   </div>
 
   <div class="score">Skor: <span id="score">0</span></div>
-  <div class="timer">Masa: <span id="time">180</span>s</div>
-  <div id="gameover" class="gameover">Permainan Tamat</div>
-  <div id="pointer" class="pointer">x: 0\ny: 0</div>
+  <div class="timer">Masa: <span id="time">30</span>s</div>
+  <div id="gameover" class="gameover">Game Over</div>
+
+  <!-- Pointer tukar kepada hand-cursor.png -->
+  <img id="pointerImg" src="hand-cursor.png">
+  <div id="pointerLabel">x: 0 y: 0</div>
+
   <img src="butterfly-tran.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
   <img id="hitEffect" src="sparkle.gif" />
 
@@ -140,8 +150,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
   <script>
-    const pointer = document.getElementById('pointer');
+    const pointerImg = document.getElementById('pointerImg');
+    const pointerLabel = document.getElementById('pointerLabel');
     const objs = [...document.querySelectorAll('.obj')];
     const scoreDisplay = document.getElementById('score');
     const timeDisplay = document.getElementById('time');
@@ -152,7 +164,7 @@
     const hitEffect = document.getElementById('hitEffect');
 
     let score = 0;
-    let timeLeft = 180;
+    let timeLeft = 30;
     let gameActive = false;
     let countdown;
 
@@ -182,8 +194,11 @@
         const x = (1 - landmark.x) * window.innerWidth;
         const y = landmark.y * window.innerHeight;
 
-        pointer.style.transform = `translate(${x}px, ${y}px)`;
-        pointer.innerText = `x: ${Math.round(x)}\ny: ${Math.round(y)}`;
+        pointerImg.style.left = `${x - 24}px`;
+        pointerImg.style.top = `${y - 24}px`;
+        pointerLabel.style.left = `${x + 10}px`;
+        pointerLabel.style.top = `${y + 10}px`;
+        pointerLabel.textContent = `x: ${Math.round(x)} y: ${Math.round(y)}`;
 
         objs.forEach((el) => {
           const rect = el.getBoundingClientRect();
@@ -206,10 +221,6 @@
               hitEffect.style.top = (y - 40) + 'px';
               hitEffect.style.display = 'block';
               setTimeout(() => hitEffect.style.display = 'none', 500);
-
-              if (score >= 10) {
-                endGame("Tahniah! Anda menang!");
-              }
             }
           }
         });
@@ -225,7 +236,7 @@
     function startGame() {
       startScreen.style.display = 'none';
       score = 0;
-      timeLeft = 180;
+      timeLeft = 30;
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeLeft;
       gameOverText.style.display = 'none';
@@ -237,19 +248,13 @@
         if (!gameActive) return;
         timeLeft--;
         timeDisplay.textContent = timeLeft;
-
         if (timeLeft <= 0) {
-          endGame("Masa Tamat!");
+          clearInterval(countdown);
+          gameOverText.style.display = 'block';
+          gameActive = false;
+          bgMusic.pause();
         }
       }, 1000);
-    }
-
-    function endGame(message) {
-      clearInterval(countdown);
-      gameOverText.textContent = message;
-      gameOverText.style.display = 'block';
-      gameActive = false;
-      bgMusic.pause();
     }
   </script>
 </body>
