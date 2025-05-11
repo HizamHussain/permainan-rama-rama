@@ -164,7 +164,7 @@
     const hitEffect = document.getElementById('hitEffect');
 
     let score = 0;
-    let timeLeft = 30;
+    let timeLeft = 0;
     let gameActive = false;
     let countdown;
 
@@ -241,7 +241,7 @@
     function startGame() {
       startScreen.style.display = 'none';
       score = 0;
-      timeLeft = 30;
+      timeLeft = 0;
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeLeft;
       gameOverText.style.display = 'none';
