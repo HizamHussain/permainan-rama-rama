@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>9 Permainan Rama-rama</title>
+  <title>SPARK Permainan Rama-rama</title>
   <style>
     html, body {
       height: 100%;
@@ -20,25 +20,14 @@
 
     .pointer {
       position: absolute;
-      z-index: 9999;
-      text-align: center;
-      transform: translate(-50%, -50%);
-    }
-
-    .pointer img {
-      width: 48px;
-      height: 48px;
-    }
-
-    .pointer span {
-      display: block;
-      font-size: 12px;
-      background: rgba(255, 0, 0, 0.8);
+      padding: 4px 6px;
+      background: red;
       color: white;
-      padding: 2px 6px;
+      font-size: 12px;
       border-radius: 6px;
-      margin-top: 2px;
+      z-index: 9999;
       white-space: pre;
+      cursor: url('hand-cursor.png'), auto;
     }
 
     .obj {
@@ -76,7 +65,7 @@
       z-index: 10001;
     }
 
-    /* Start Screen */
+    /* Skrin permulaan */
     #startScreen {
       position: absolute;
       z-index: 10002;
@@ -118,13 +107,22 @@
     #startButton:hover {
       background-color: #00b342;
     }
+
+    #hitEffect {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      display: none;
+      z-index: 10001;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
   <!-- Skrin Permulaan -->
   <div id="startScreen">
     <h1>Permainan Rama-rama</h1>
-    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer!</p>
+    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer merah!</p>
     <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
     <p>🎯 Sentuh rama-rama untuk mendapatkan poin</p>
     <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
@@ -134,27 +132,23 @@
   <div class="score">Skor: <span id="score">0</span></div>
   <div class="timer">Masa: <span id="time">30</span>s</div>
   <div id="gameover" class="gameover">Game Over</div>
-
-  <!-- Pointer dengan gambar tapak tangan -->
-  <div id="pointer" class="pointer">
-    <img src="hand-cursor.png" alt="Hand Pointer" />
-    <span id="coords">x: 0\ny: 0</span>
-  </div>
-
+  <div id="pointer" class="pointer">x: 0\ny: 0</div>
   <img src="butterfly-tran.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
+  <img id="hitEffect" src="sparkle.gif" />
+
   <audio id="popSound" src="pop.mp3" preload="auto"></audio>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script>
     const pointer = document.getElementById('pointer');
-    const coordsText = document.getElementById('coords');
     const objs = [...document.querySelectorAll('.obj')];
     const scoreDisplay = document.getElementById('score');
     const timeDisplay = document.getElementById('time');
     const gameOverText = document.getElementById('gameover');
     const popSound = document.getElementById('popSound');
     const startScreen = document.getElementById('startScreen');
+    const hitEffect = document.getElementById('hitEffect');
 
     let score = 0;
     let timeLeft = 30;
@@ -187,9 +181,8 @@
         const x = (1 - landmark.x) * window.innerWidth;
         const y = landmark.y * window.innerHeight;
 
-        pointer.style.left = `${x}px`;
-        pointer.style.top = `${y}px`;
-        coordsText.innerText = `x: ${Math.round(x)}\ny: ${Math.round(y)}`;
+        pointer.style.transform = `translate(${x}px, ${y}px)`;
+        pointer.innerText = `x: ${Math.round(x)}\ny: ${Math.round(y)}`;
 
         objs.forEach((el) => {
           const rect = el.getBoundingClientRect();
@@ -198,12 +191,27 @@
           if (Math.hypot(dx, dy) < 50) {
             const action = el.dataset.action;
             if (action === 'move') {
-              el.style.left = Math.random() * window.innerWidth + 'px';
-              el.style.top = Math.random() * window.innerHeight + 'px';
+              // Gerakkan rama-rama
+              const newX = Math.random() * (window.innerWidth - 64);
+              const newY = Math.random() * (window.innerHeight - 64);
+              el.style.left = newX + 'px';
+              el.style.top = newY + 'px';
+
+              // Tambah skor dan bunyi
               score += 1;
               scoreDisplay.textContent = score;
               popSound.currentTime = 0;
               popSound.play();
+
+              // Tunjuk animasi GIF
+              hitEffect.style.left = (x - 40) + 'px';
+              hitEffect.style.top = (y - 40) + 'px';
+              hitEffect.style.display = 'block';
+
+              // Sembunyi selepas 500ms
+              setTimeout(() => {
+                hitEffect.style.display = 'none';
+              }, 500);
             }
           }
         });
