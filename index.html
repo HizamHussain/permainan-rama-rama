@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8 Permainan Rama-rama</title>
+  <title>Permainan Rama-rama</title>
   <style>
     html, body {
       height: 100%;
@@ -27,7 +27,7 @@
       border-radius: 6px;
       z-index: 9999;
       white-space: pre;
-      cursor: url('hand-cursor.png'), auto; /* Bentuk tapak tangan */
+      cursor: url('hand-cursor.png'), auto;
     }
 
     .obj {
@@ -64,9 +64,62 @@
       display: none;
       z-index: 10001;
     }
+
+    /* Start Screen */
+    #startScreen {
+      position: absolute;
+      z-index: 10002;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #startScreen h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+
+    #startScreen p {
+      font-size: 18px;
+      margin: 8px 0;
+    }
+
+    #startButton {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #00c853;
+      color: white;
+      cursor: pointer;
+    }
+
+    #startButton:hover {
+      background-color: #00b342;
+    }
   </style>
 </head>
 <body>
+  <!-- Skrin Permulaan -->
+  <div id="startScreen">
+    <h1>Permainan Rama-rama</h1>
+    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer merah!</p>
+    <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
+    <p>🎯 Sentuh target biru untuk mendapatkan poin</p>
+    <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
+    <button id="startButton" onclick="startGame()">Mula</button>
+  </div>
+
   <div class="score">Skor: <span id="score">0</span></div>
   <div class="timer">Masa: <span id="time">30</span>s</div>
   <div id="gameover" class="gameover">Game Over</div>
@@ -84,10 +137,12 @@
     const timeDisplay = document.getElementById('time');
     const gameOverText = document.getElementById('gameover');
     const popSound = document.getElementById('popSound');
+    const startScreen = document.getElementById('startScreen');
 
     let score = 0;
     let timeLeft = 30;
-    let gameActive = true;
+    let gameActive = false;
+    let countdown;
 
     const video = document.createElement('video');
     video.autoplay = true;
@@ -143,16 +198,26 @@
       height: 480,
     }).start();
 
-    const countdown = setInterval(() => {
-      if (!gameActive) return;
-      timeLeft--;
+    function startGame() {
+      startScreen.style.display = 'none';
+      score = 0;
+      timeLeft = 30;
+      scoreDisplay.textContent = score;
       timeDisplay.textContent = timeLeft;
-      if (timeLeft <= 0) {
-        clearInterval(countdown);
-        gameOverText.style.display = 'block';
-        gameActive = false;
-      }
-    }, 1000);
+      gameOverText.style.display = 'none';
+      gameActive = true;
+
+      countdown = setInterval(() => {
+        if (!gameActive) return;
+        timeLeft--;
+        timeDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          gameOverText.style.display = 'block';
+          gameActive = false;
+        }
+      }, 1000);
+    }
   </script>
 </body>
 </html>
