@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6 Permainan Rama-rama</title>
+  <title>Permainan Rama-rama</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
     .pointer { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; z-index: 9999; }
@@ -38,7 +38,7 @@
 
     hands.onResults((results) => {
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmark = results.multiHandLandmarks[0][8];
+        const landmark = results.multiHandLandmarks[0][0]; // Tapak tangan (wrist)
         const x = (1 - landmark.x) * window.innerWidth; // Terbalikkan arah X
         const y = landmark.y * window.innerHeight;
 
