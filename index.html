@@ -12,24 +12,28 @@
       background-size: cover;
       font-family: sans-serif;
     }
+
     .pointer {
       position: absolute;
-      width: 20px;
-      height: 20px;
+      padding: 4px 6px;
       background: red;
-      border-radius: 50%;
+      color: white;
+      font-size: 12px;
+      border-radius: 6px;
       z-index: 9999;
+      white-space: pre;
     }
+
     .obj {
       position: absolute;
       width: 64px;
       height: 64px;
       pointer-events: none;
     }
-    .score {
+
+    .score, .timer {
       position: absolute;
       top: 10px;
-      left: 10px;
       font-size: 24px;
       color: white;
       background: rgba(0, 0, 0, 0.5);
@@ -37,12 +41,34 @@
       border-radius: 8px;
       z-index: 10000;
     }
+
+    .score { left: 10px; }
+    .timer { right: 10px; }
+
+    .gameover {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px 40px;
+      border-radius: 16px;
+      display: none;
+      z-index: 10001;
+    }
   </style>
 </head>
 <body>
   <div class="score">Skor: <span id="score">0</span></div>
-  <div id="pointer" class="pointer"></div>
+  <div class="timer">Masa: <span id="time">30</span>s</div>
+  <div id="gameover" class="gameover">Game Over</div>
+  <div id="pointer" class="pointer">x: 0\ny: 0</div>
   <img src="butterfly-tran.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
+
+  <!-- Bunyi -->
+  <audio id="popSound" src="pop.mp3" preload="auto"></audio>
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -50,7 +76,13 @@
     const pointer = document.getElementById('pointer');
     const objs = [...document.querySelectorAll('.obj')];
     const scoreDisplay = document.getElementById('score');
+    const timeDisplay = document.getElementById('time');
+    const gameOverText = document.getElementById('gameover');
+    const popSound = document.getElementById('popSound');
+
     let score = 0;
+    let timeLeft = 30;
+    let gameActive = true;
 
     const video = document.createElement('video');
     video.autoplay = true;
@@ -71,12 +103,15 @@
     });
 
     hands.onResults((results) => {
+      if (!gameActive) return;
+
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmark = results.multiHandLandmarks[0][0]; // Tapak tangan
+        const landmark = results.multiHandLandmarks[0][0]; // tapak tangan
         const x = (1 - landmark.x) * window.innerWidth;
         const y = landmark.y * window.innerHeight;
 
         pointer.style.transform = `translate(${x}px, ${y}px)`;
+        pointer.innerText = `x: ${Math.round(x)}\ny: ${Math.round(y)}`;
 
         objs.forEach((el) => {
           const rect = el.getBoundingClientRect();
@@ -89,6 +124,8 @@
               el.style.top = Math.random() * window.innerHeight + 'px';
               score += 1;
               scoreDisplay.textContent = score;
+              popSound.currentTime = 0;
+              popSound.play();
             }
           }
         });
@@ -100,6 +137,18 @@
       width: 640,
       height: 480,
     }).start();
+
+    // Timer
+    const countdown = setInterval(() => {
+      if (!gameActive) return;
+      timeLeft--;
+      timeDisplay.textContent = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        gameOverText.style.display = 'block';
+        gameActive = false;
+      }
+    }, 1000);
   </script>
 </body>
 </html>
