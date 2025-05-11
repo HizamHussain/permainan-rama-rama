@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Permainan Rama-rama</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    body {
+      background: url('taman.jpg') no-repeat center center;
+      background-size: cover;
+      font-family: sans-serif;
+    }
+    .obj {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      pointer-events: none;
+    }
+    .score, .timer {
+      position: absolute;
+      top: 10px;
+      font-size: 24px;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+      z-index: 10000;
+    }
+    .score { left: 10px; }
+    .timer { right: 10px; }
+    .gameover {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px 40px;
+      border-radius: 16px;
+      display: none;
+      z-index: 10001;
+    }
+    #startScreen {
+      position: absolute;
+      z-index: 10002;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+    #startScreen h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+    #startScreen p {
+      font-size: 18px;
+      margin: 8px 0;
+    }
+    #startScreen button {
+      margin: 5px;
+      padding: 12px 24px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #00c853;
+      color: white;
+      cursor: pointer;
+    }
+    #startScreen button:hover {
+      background-color: #00b342;
+    }
+    #pointerImg {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #pointerLabel {
+      position: absolute;
+      font-size: 12px;
+      color: white;
+      background: red;
+      padding: 2px 4px;
+      border-radius: 4px;
+      z-index: 10000;
+      pointer-events: none;
+    }
+    #hitEffect {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      display: none;
+      z-index: 10001;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="startScreen">
+    <h1>Permainan Rama-rama</h1>
+    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer!</p>
+    <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
+    <p>🎯 Sentuh rama-rama untuk mendapatkan poin</p>
+    <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
+    <button onclick="startGame(1)">Tahap 1</button>
+    <button onclick="startGame(2)">Tahap 2</button>
+    <button onclick="startGame(3)">Tahap 3</button>
+  </div>
+
+  <div class="score">Skor: <span id="score">0</span></div>
+  <div class="timer">Masa: <span id="time">0</span>s</div>
+  <div id="gameover" class="gameover"></div>
+
+  <img id="pointerImg" src="hand-cursor.png">
+  <div id="pointerLabel">x: 0 y: 0</div>
+  <img id="hitEffect" src="sparkle.gif" />
+
+  <audio id="popSound" src="pop.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="lagu.mp3" loop preload="auto"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <script>
+    const pointerImg = document.getElementById('pointerImg');
+    const pointerLabel = document.getElementById('pointerLabel');
+    const scoreDisplay = document.getElementById('score');
+    const timeDisplay = document.getElementById('time');
+    const gameOverText = document.getElementById('gameover');
+    const popSound = document.getElementById('popSound');
+    const bgMusic = document.getElementById('bgMusic');
+    const startScreen = document.getElementById('startScreen');
+    const hitEffect = document.getElementById('hitEffect');
+
+    let score = 0;
+    let timeLeft = 0;
+    let gameActive = false;
+    let countdown;
+    let butterfly = null;
+    let butterflyTimeout, moveInterval;
+    let currentLevel = 1;
+
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      video.srcObject = stream;
+    });
+
+    const hands = new Hands({
+      locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7
+    });
+
+    hands.onResults(results => {
+      if (!gameActive) return;
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmark = results.multiHandLandmarks[0][0];
+        const x = (1 - landmark.x) * window.innerWidth;
+        const y = landmark.y * window.innerHeight;
+
+        pointerImg.style.left = `${x - 24}px`;
+        pointerImg.style.top = `${y - 24}px`;
+        pointerLabel.style.left = `${x + 10}px`;
+        pointerLabel.style.top = `${y + 10}px`;
+        pointerLabel.textContent = `x: ${Math.round(x)} y: ${Math.round(y)}`;
+
+        if (butterfly) {
+          const rect = butterfly.getBoundingClientRect();
+          const dx = x - rect.left;
+          const dy = y - rect.top;
+          if (Math.hypot(dx, dy) < 50) {
+            butterfly.remove();
+            butterfly = null;
+            clearTimeout(butterflyTimeout);
+            clearInterval(moveInterval);
+            score++;
+            scoreDisplay.textContent = score;
+            popSound.currentTime = 0;
+            popSound.play();
+            hitEffect.style.left = (x - 40) + 'px';
+            hitEffect.style.top = (y - 40) + 'px';
+            hitEffect.style.display = 'block';
+            setTimeout(() => hitEffect.style.display = 'none', 500);
+            if (score >= 10) endGame("TAHNIAH. Anda berjaya.");
+            else if (currentLevel !== 1) spawnButterfly();
+          }
+        }
+      }
+    });
+
+    new Camera(video, {
+      onFrame: async () => await hands.send({ image: video }),
+      width: 640,
+      height: 480
+    }).start();
+
+    function startGame(level) {
+      currentLevel = level;
+      startScreen.style.display = 'none';
+      score = 0;
+      timeLeft = 0;
+      scoreDisplay.textContent = score;
+      timeDisplay.textContent = timeLeft;
+      gameOverText.style.display = 'none';
+      gameActive = true;
+      bgMusic.currentTime = 0;
+      bgMusic.play();
+      if (level !== 1) spawnButterfly();
+      countdown = setInterval(() => {
+        if (!gameActive) return;
+        timeLeft++;
+        timeDisplay.textContent = timeLeft;
+        if (timeLeft >= 180) endGame("Cuba lagi");
+      }, 1000);
+    }
+
+    function spawnButterfly() {
+      if (butterfly) butterfly.remove();
+      butterfly = document.createElement('img');
+      butterfly.src = 'butterfly-tran.gif';
+      butterfly.className = 'obj';
+      butterfly.dataset.action = 'move';
+      butterfly.style.left = Math.random() * (window.innerWidth - 64) + 'px';
+      butterfly.style.top = Math.random() * (window.innerHeight - 64) + 'px';
+      document.body.appendChild(butterfly);
+      if (currentLevel === 2) {
+        butterflyTimeout = setTimeout(() => {
+          if (butterfly) {
+            butterfly.remove();
+            butterfly = null;
+            spawnButterfly();
+          }
+        }, 2000);
+      } else if (currentLevel === 3) {
+        let dx = (Math.random() - 0.5) * 2;
+        let dy = (Math.random() - 0.5) * 2;
+        moveInterval = setInterval(() => {
+          if (!butterfly) return;
+          let x = parseFloat(butterfly.style.left);
+          let y = parseFloat(butterfly.style.top);
+          x += dx;
+          y += dy;
+          if (x < 0 || x > window.innerWidth - 64) dx = -dx;
+          if (y < 0 || y > window.innerHeight - 64) dy = -dy;
+          butterfly.style.left = x + 'px';
+          butterfly.style.top = y + 'px';
+        }, 20);
+      }
+    }
+
+    function endGame(message) {
+      clearInterval(countdown);
+      clearTimeout(butterflyTimeout);
+      clearInterval(moveInterval);
+      if (butterfly) butterfly.remove();
+      butterfly = null;
+      gameOverText.textContent = message;
+      gameOverText.style.display = 'block';
+      gameActive = false;
+      bgMusic.pause();
+      const backButton = document.createElement('button');
+      backButton.textContent = 'Kembali ke Skrin Permulaan';
+      backButton.onclick = () => {
+        gameOverText.style.display = 'none';
+        startScreen.style.display = 'flex';
+        backButton.remove();
+      };
+      gameOverText.appendChild(document.createElement('br'));
+      gameOverText.appendChild(backButton);
+    }
+  </script>
+</body>
+</html>
