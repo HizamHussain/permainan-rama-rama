@@ -131,6 +131,12 @@
     <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
     <p>🎯 Sentuh rama-rama untuk mendapatkan poin</p>
     <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
+    <label for="levelSelect">Pilih Tahap:</label>
+    <select id="levelSelect">
+      <option value="1">Level 1 (Statik)</option>
+      <option value="2">Level 2 (Muncul & Hilang)</option>
+      <option value="3">Level 3 (Bergerak Perlahan)</option>
+    </select>
     <button id="startButton" onclick="startGame()">Mula</button>
   </div>
 
@@ -138,11 +144,8 @@
   <div class="timer">Masa: <span id="time">180</span>s</div>
   <div id="gameover" class="gameover">Cuba Lagi.</div>
 
-  <!-- Pointer tukar kepada hand-cursor.png -->
   <img id="pointerImg" src="hand-cursor.png">
   <div id="pointerLabel">x: 0 y: 0</div>
-
-  <img src="butterfly-tran.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
   <img id="hitEffect" src="sparkle.gif" />
 
   <audio id="popSound" src="pop.mp3" preload="auto"></audio>
@@ -154,7 +157,6 @@
   <script>
     const pointerImg = document.getElementById('pointerImg');
     const pointerLabel = document.getElementById('pointerLabel');
-    const objs = [...document.querySelectorAll('.obj')];
     const scoreDisplay = document.getElementById('score');
     const timeDisplay = document.getElementById('time');
     const gameOverText = document.getElementById('gameover');
@@ -163,10 +165,12 @@
     const startScreen = document.getElementById('startScreen');
     const hitEffect = document.getElementById('hitEffect');
 
+    let objs = [];
     let score = 0;
     let timeLeft = 0;
     let gameActive = false;
     let countdown;
+    let level = 1;
 
     const video = document.createElement('video');
     video.autoplay = true;
@@ -207,10 +211,8 @@
           if (Math.hypot(dx, dy) < 50) {
             const action = el.dataset.action;
             if (action === 'move') {
-              const newX = Math.random() * (window.innerWidth - 64);
-              const newY = Math.random() * (window.innerHeight - 64);
-              el.style.left = newX + 'px';
-              el.style.top = newY + 'px';
+              el.remove();
+              objs.splice(objs.indexOf(el), 1);
 
               score += 1;
               scoreDisplay.textContent = score;
@@ -222,7 +224,6 @@
               hitEffect.style.display = 'block';
               setTimeout(() => hitEffect.style.display = 'none', 500);
 
-              // Tamat jika skor >= 10
               if (score >= 10) {
                 endGame("TAHNIAH. Anda berjaya.");
               }
@@ -240,14 +241,21 @@
 
     function startGame() {
       startScreen.style.display = 'none';
+      level = parseInt(document.getElementById('levelSelect').value);
       score = 0;
       timeLeft = 0;
+      objs.forEach(el => el.remove());
+      objs = [];
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeLeft;
       gameOverText.style.display = 'none';
       gameActive = true;
       bgMusic.currentTime = 0;
       bgMusic.play();
+
+      if (level === 2) startLevel2Butterflies();
+      if (level === 3) startLevel3Butterflies();
+      if (level === 1) initStaticButterfly();
 
       countdown = setInterval(() => {
         if (!gameActive) return;
@@ -266,6 +274,62 @@
       gameOverText.style.display = 'block';
       gameActive = false;
       bgMusic.pause();
+    }
+
+    function initStaticButterfly() {
+      const el = document.createElement("img");
+      el.src = "butterfly-tran.gif";
+      el.className = "obj";
+      el.dataset.action = "move";
+      el.style.left = '200px';
+      el.style.top = '200px';
+      document.body.appendChild(el);
+      objs.push(el);
+    }
+
+    function startLevel2Butterflies() {
+      setInterval(() => {
+        if (!gameActive || level !== 2) return;
+        const el = document.createElement("img");
+        el.src = "butterfly-tran.gif";
+        el.className = "obj";
+        el.dataset.action = "move";
+        el.style.left = Math.random() * (window.innerWidth - 64) + 'px';
+        el.style.top = Math.random() * (window.innerHeight - 64) + 'px';
+        document.body.appendChild(el);
+        objs.push(el);
+        setTimeout(() => {
+          if (objs.includes(el)) {
+            el.remove();
+            objs.splice(objs.indexOf(el), 1);
+          }
+        }, 2000);
+      }, 1000);
+    }
+
+    function startLevel3Butterflies() {
+      setInterval(() => {
+        if (!gameActive || level !== 3) return;
+        const el = document.createElement("img");
+        el.src = "butterfly-tran.gif";
+        el.className = "obj";
+        el.dataset.action = "move";
+        el.style.left = Math.random() * (window.innerWidth - 64) + 'px';
+        el.style.top = Math.random() * (window.innerHeight - 64) + 'px';
+        document.body.appendChild(el);
+        objs.push(el);
+
+        const moveInterval = setInterval(() => {
+          if (!gameActive || !document.body.contains(el)) {
+            clearInterval(moveInterval);
+            return;
+          }
+          const x = parseFloat(el.style.left);
+          const y = parseFloat(el.style.top);
+          el.style.left = Math.max(0, Math.min(window.innerWidth - 64, x + (Math.random() * 10 - 5))) + 'px';
+          el.style.top = Math.max(0, Math.min(window.innerHeight - 64, y + (Math.random() * 10 - 5))) + 'px';
+        }, 100);
+      }, 2000);
     }
   </script>
 </body>
