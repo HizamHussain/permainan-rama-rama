@@ -221,6 +221,11 @@
               hitEffect.style.top = (y - 40) + 'px';
               hitEffect.style.display = 'block';
               setTimeout(() => hitEffect.style.display = 'none', 500);
+
+              // Tamat jika skor >= 10
+              if (score >= 10) {
+                endGame();
+              }
             }
           }
         });
@@ -246,15 +251,20 @@
 
       countdown = setInterval(() => {
         if (!gameActive) return;
-        timeLeft--;
+        timeLeft++;
         timeDisplay.textContent = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(countdown);
-          gameOverText.style.display = 'block';
-          gameActive = false;
-          bgMusic.pause();
+
+        if (timeLeft >= 180 || score >= 10) {
+          endGame();
         }
       }, 1000);
+    }
+
+    function endGame() {
+      clearInterval(countdown);
+      gameOverText.style.display = 'block';
+      gameActive = false;
+      bgMusic.pause();
     }
   </script>
 </body>
