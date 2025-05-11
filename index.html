@@ -1,171 +1,59 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>4 Permainan Kawalan Tangan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5 Permainan Rama-rama</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; }
-    video, canvas { display: none; }
-    #pointer {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      background: red;
-      border-radius: 50%;
-      pointer-events: none;
-    }
-    #target {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background: green;
-      border-radius: 50%;
-    }
-    #score, #timer, #highscore {
-      position: absolute;
-      font-size: 24px;
-      color: white;
-      background: rgba(0,0,0,0.6);
-      padding: 10px 20px;
-      border-radius: 10px;
-    }
-    #score { top: 20px; left: 20px; }
-    #timer { top: 20px; right: 20px; }
-    #highscore { top: 70px; left: 20px; }
-    #gameOver {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 48px;
-      color: white;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 40px 60px;
-      border-radius: 20px;
-      display: none;
-    }
+    body { margin: 0; overflow: hidden; background: black; }
+    .pointer { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; z-index: 9999; }
+    .obj { position: absolute; width: 64px; height: 64px; pointer-events: none; }
   </style>
 </head>
 <body>
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas"></canvas>
-  <div id="pointer"></div>
-  <div id="target"></div>
-  <div id="score">Skor: 0</div>
-  <div id="highscore">Rekod Tertinggi: 0</div>
-  <div id="timer">Masa: 30</div>
-  <div id="gameOver">Permainan Tamat!</div>
-
-  <script type="module">
-    import { Hands } from 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
-    import { Camera } from 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
-    import { drawConnectors, drawLandmarks } from 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js';
-
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+  <div id="pointer" class="pointer"></div>
+  <img src="https://i.imgur.com/0LadL4N.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script>
     const pointer = document.getElementById('pointer');
-    const target = document.getElementById('target');
-    const scoreDisplay = document.getElementById('score');
-    const timerDisplay = document.getElementById('timer');
-    const highscoreDisplay = document.getElementById('highscore');
-    const gameOverDisplay = document.getElementById('gameOver');
-
-    canvas.width = 640;
-    canvas.height = 480;
-
-    let score = 0;
-    let cooldown = false;
-    let timeLeft = 30;
-    let gameOver = false;
-    let highScore = localStorage.getItem('highScore') || 0;
-    highscoreDisplay.textContent = `Rekod Tertinggi: ${highScore}`;
-
-    function randomizeTarget() {
-      const maxX = window.innerWidth - 50;
-      const maxY = window.innerHeight - 50;
-      const x = Math.random() * maxX;
-      const y = Math.random() * maxY;
-      target.style.left = `${x}px`;
-      target.style.top = `${y}px`;
-    }
-
-    function endGame() {
-      gameOver = true;
-      gameOverDisplay.style.display = 'block';
-      if (score > highScore) {
-        localStorage.setItem('highScore', score);
-        highscoreDisplay.textContent = `Rekod Tertinggi: ${score}`;
-      }
-    }
-
-    function startTimer() {
-      const timer = setInterval(() => {
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          endGame();
-        } else {
-          timeLeft--;
-          timerDisplay.textContent = `Masa: ${timeLeft}`;
-        }
-      }, 1000);
-    }
-
-    function onResults(results) {
-      if (gameOver) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        for (const landmarks of results.multiHandLandmarks) {
-          drawConnectors(ctx, landmarks, Hands.HAND_CONNECTIONS, { color: '#00FF00' });
-          drawLandmarks(ctx, landmarks, { color: '#FF0000', lineWidth: 2 });
-
-          // Index finger tip = landmark[8]
-          const x = landmarks[8].x * window.innerWidth;
-          const y = landmarks[8].y * window.innerHeight;
-
-          pointer.style.transform = `translate(${x - 15}px, ${y - 15}px)`;
-
-          const targetRect = target.getBoundingClientRect();
-          if (
-            x > targetRect.left && x < targetRect.right &&
-            y > targetRect.top && y < targetRect.bottom
-          ) {
-            if (!cooldown) {
-              score++;
-              scoreDisplay.textContent = `Skor: ${score}`;
-              randomizeTarget();
-              cooldown = true;
-              setTimeout(() => cooldown = false, 700);
-            }
-          }
-        }
-      }
-    }
-
+    const objs = [...document.querySelectorAll('.obj')];
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      video.srcObject = stream;
+    });
     const hands = new Hands({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
     });
-
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.7,
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+    hands.onResults((results) => {
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmark = results.multiHandLandmarks[0][8];
+        const x = landmark.x * window.innerWidth;
+        const y = landmark.y * window.innerHeight;
+        pointer.style.transform = `translate(${x}px, ${y}px)`;
+        objs.forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          const dx = x - rect.left;
+          const dy = y - rect.top;
+          if (Math.hypot(dx, dy) < 50) {
+            const action = el.dataset.action;
+            if (action === 'move') {
+              el.style.left = Math.random() * window.innerWidth + 'px';
+              el.style.top = Math.random() * window.innerHeight + 'px';
+            }
+          }
+        });
+      }
     });
-
-    hands.onResults(onResults);
-
-    const camera = new Camera(video, {
-      onFrame: async () => {
-        if (!gameOver) await hands.send({ image: video });
-      },
+    new Camera(video, {
+      onFrame: async () => await hands.send({ image: video }),
       width: 640,
       height: 480,
-    });
-
-    camera.start();
-    randomizeTarget();
-    startTimer();
+    }).start();
   </script>
 </body>
 </html>
