@@ -3,28 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BUTTON Permainan Rama-rama</title>
+  <title>Permainan Rama-rama</title>
   <style>
     html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+      height: 100%; margin: 0; padding: 0; overflow: hidden;
+      font-family: sans-serif;
     }
-
     body {
       background: url('taman.jpg') no-repeat center center;
       background-size: cover;
-      font-family: sans-serif;
     }
-
     .obj {
       position: absolute;
       width: 64px;
       height: 64px;
       pointer-events: none;
     }
-
     .score, .timer {
       position: absolute;
       top: 10px;
@@ -35,10 +29,8 @@
       border-radius: 8px;
       z-index: 10000;
     }
-
     .score { left: 10px; }
     .timer { right: 10px; }
-
     .gameover {
       position: absolute;
       top: 50%;
@@ -52,14 +44,11 @@
       display: none;
       z-index: 10001;
     }
-
     #startScreen {
       position: absolute;
       z-index: 10002;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.8);
       color: white;
       display: flex;
@@ -69,32 +58,16 @@
       text-align: center;
       padding: 20px;
     }
-
-    #startScreen h1 {
-      font-size: 36px;
-      margin-bottom: 20px;
-    }
-
-    #startScreen p {
-      font-size: 18px;
-      margin: 8px 0;
-    }
-
-    .level-button {
-      margin: 5px;
-      padding: 12px 20px;
-      font-size: 18px;
+    #startScreen button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 20px;
       border: none;
       border-radius: 8px;
-      background-color: #1976d2;
+      background-color: #00c853;
       color: white;
       cursor: pointer;
     }
-
-    .level-button:hover {
-      background-color: #125aa0;
-    }
-
     #pointerImg {
       position: absolute;
       width: 48px;
@@ -102,7 +75,6 @@
       pointer-events: none;
       z-index: 9999;
     }
-
     #pointerLabel {
       position: absolute;
       font-size: 12px;
@@ -113,7 +85,6 @@
       z-index: 10000;
       pointer-events: none;
     }
-
     #hitEffect {
       position: absolute;
       width: 80px;
@@ -127,26 +98,18 @@
 <body>
   <div id="startScreen">
     <h1>Permainan Rama-rama</h1>
-    <p>🚀 Gunakan pergerakan tangan Anda untuk mengontrol pointer!</p>
-    <p>👋 Tunjukkan tangan Anda ke kamera dan gerakkan untuk menggerakkan pointer</p>
-    <p>🎯 Sentuh rama-rama untuk mendapatkan poin</p>
-    <p>💡 Pastikan pencahayaan cukup dan tangan terlihat jelas di kamera</p>
-    <div>
-      <button class="level-button" onclick="startGame(60)">Mudah (60s)</button>
-      <button class="level-button" onclick="startGame(120)">Sederhana (120s)</button>
-      <button class="level-button" onclick="startGame(180)">Sukar (180s)</button>
-    </div>
+    <p>Gunakan tangan anda untuk sentuh rama-rama</p>
+    <button onclick="selectLevel(1)">Level 1</button>
+    <button onclick="selectLevel(2)">Level 2</button>
+    <button onclick="selectLevel(3)">Level 3</button>
   </div>
-
   <div class="score">Skor: <span id="score">0</span></div>
   <div class="timer">Masa: <span id="time">0</span>s</div>
   <div id="gameover" class="gameover">Cuba Lagi.</div>
+  <button id="backButton" onclick="backToStart()" style="display:none; position:absolute; top:65%; left:50%; transform:translateX(-50%); font-size:18px;">🔁 Kembali</button>
 
   <img id="pointerImg" src="hand-cursor.png">
   <div id="pointerLabel">x: 0 y: 0</div>
-
-  <div id="gameContainer"></div>
-
   <img id="hitEffect" src="sparkle.gif" />
 
   <audio id="popSound" src="pop.mp3" preload="auto"></audio>
@@ -154,11 +117,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-
   <script>
     const pointerImg = document.getElementById('pointerImg');
     const pointerLabel = document.getElementById('pointerLabel');
-    const gameContainer = document.getElementById('gameContainer');
     const scoreDisplay = document.getElementById('score');
     const timeDisplay = document.getElementById('time');
     const gameOverText = document.getElementById('gameover');
@@ -166,125 +127,141 @@
     const bgMusic = document.getElementById('bgMusic');
     const startScreen = document.getElementById('startScreen');
     const hitEffect = document.getElementById('hitEffect');
+    const backButton = document.getElementById('backButton');
 
     let score = 0;
     let timeLeft = 0;
-    let maxTime = 0;
     let gameActive = false;
     let countdown;
-    let butterfly;
+    let currentLevel = 1;
+    let butterflyTimeout = null;
+    let movingButterfly = null;
 
     const video = document.createElement('video');
     video.autoplay = true;
     video.playsInline = true;
-    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-      video.srcObject = stream;
-    });
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => video.srcObject = stream);
 
-    const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-    });
-
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.7
-    });
+    const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
 
     hands.onResults((results) => {
       if (!gameActive) return;
-
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmark = results.multiHandLandmarks[0][0];
         const x = (1 - landmark.x) * window.innerWidth;
         const y = landmark.y * window.innerHeight;
-
         pointerImg.style.left = `${x - 24}px`;
         pointerImg.style.top = `${y - 24}px`;
         pointerLabel.style.left = `${x + 10}px`;
         pointerLabel.style.top = `${y + 10}px`;
         pointerLabel.textContent = `x: ${Math.round(x)} y: ${Math.round(y)}`;
 
-        if (butterfly) {
-          const rect = butterfly.getBoundingClientRect();
+        document.querySelectorAll('.obj').forEach((el) => {
+          const rect = el.getBoundingClientRect();
           const dx = x - rect.left;
           const dy = y - rect.top;
           if (Math.hypot(dx, dy) < 50) {
-            score += 1;
+            el.remove();
+            if (butterflyTimeout) clearTimeout(butterflyTimeout);
+            if (movingButterfly) clearInterval(movingButterfly);
+            score++;
             scoreDisplay.textContent = score;
             popSound.currentTime = 0;
             popSound.play();
-
-            hitEffect.style.left = (x - 40) + 'px';
-            hitEffect.style.top = (y - 40) + 'px';
+            hitEffect.style.left = `${x - 40}px`;
+            hitEffect.style.top = `${y - 40}px`;
             hitEffect.style.display = 'block';
             setTimeout(() => hitEffect.style.display = 'none', 500);
-
-            butterfly.remove();
-            butterfly = null;
-            spawnButterfly();
-
-            if (score >= 10) {
-              endGame("TAHNIAH. Anda berjaya.");
-            }
+            if (score >= 10) endGame("TAHNIAH. Anda berjaya.");
+            else if (currentLevel > 1) spawnButterfly();
           }
-        }
+        });
       }
     });
 
     new Camera(video, {
       onFrame: async () => await hands.send({ image: video }),
       width: 640,
-      height: 480,
+      height: 480
     }).start();
 
-    function spawnButterfly() {
-      if (butterfly) return;
-
-      butterfly = document.createElement('img');
-      butterfly.src = 'butterfly-tran.gif';
-      butterfly.className = 'obj';
-      butterfly.dataset.action = 'move';
-      butterfly.style.left = Math.random() * (window.innerWidth - 64) + 'px';
-      butterfly.style.top = Math.random() * (window.innerHeight - 64) + 'px';
-      gameContainer.appendChild(butterfly);
+    function selectLevel(level) {
+      currentLevel = level;
+      startGame();
     }
 
-    function startGame(duration) {
+    function startGame() {
       startScreen.style.display = 'none';
       score = 0;
       timeLeft = 0;
-      maxTime = duration;
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeLeft;
       gameOverText.style.display = 'none';
+      backButton.style.display = 'none';
       gameActive = true;
       bgMusic.currentTime = 0;
       bgMusic.play();
-      spawnButterfly();
-
+      if (currentLevel > 1) spawnButterfly();
       countdown = setInterval(() => {
         if (!gameActive) return;
         timeLeft++;
         timeDisplay.textContent = timeLeft;
-
-        if (timeLeft >= maxTime) {
-          endGame("Cuba lagi");
-        }
+        if (timeLeft >= 180) endGame("Cuba lagi");
       }, 1000);
+    }
+
+    function spawnButterfly() {
+      removeButterfly();
+      const newObj = document.createElement('img');
+      newObj.src = "butterfly-tran.gif";
+      newObj.className = "obj";
+      newObj.dataset.action = "move";
+      newObj.style.left = Math.random() * (window.innerWidth - 64) + "px";
+      newObj.style.top = Math.random() * (window.innerHeight - 64) + "px";
+      document.body.appendChild(newObj);
+
+      if (currentLevel === 2) {
+        butterflyTimeout = setTimeout(() => {
+          removeButterfly();
+          spawnButterfly();
+        }, 2000);
+      } else if (currentLevel === 3) {
+        movingButterfly = setInterval(() => {
+          if (!gameActive || !newObj) return;
+          let x = parseFloat(newObj.style.left);
+          let y = parseFloat(newObj.style.top);
+          x += (Math.random() - 0.5) * 10;
+          y += (Math.random() - 0.5) * 10;
+          x = Math.max(0, Math.min(window.innerWidth - 64, x));
+          y = Math.max(0, Math.min(window.innerHeight - 64, y));
+          newObj.style.left = x + 'px';
+          newObj.style.top = y + 'px';
+        }, 100);
+      }
+    }
+
+    function removeButterfly() {
+      document.querySelectorAll('.obj').forEach(el => el.remove());
+      if (butterflyTimeout) clearTimeout(butterflyTimeout);
+      if (movingButterfly) clearInterval(movingButterfly);
     }
 
     function endGame(message) {
       clearInterval(countdown);
+      removeButterfly();
       gameOverText.textContent = message;
       gameOverText.style.display = 'block';
+      backButton.style.display = 'block';
       gameActive = false;
       bgMusic.pause();
-      if (butterfly) {
-        butterfly.remove();
-        butterfly = null;
-      }
+    }
+
+    function backToStart() {
+      startScreen.style.display = 'flex';
+      gameOverText.style.display = 'none';
+      backButton.style.display = 'none';
+      removeButterfly();
     }
   </script>
 </body>
