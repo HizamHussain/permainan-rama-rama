@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RIME Permainan Rama-rama</title>
+  <title>tIME Permainan Rama-rama</title>
   <style>
     html, body {
       height: 100%;
@@ -135,7 +135,7 @@
   </div>
 
   <div class="score">Skor: <span id="score">0</span></div>
-  <div class="timer">Masa: <span id="time">180</span>s</div>
+  <div class="timer">Masa: <span id="time">30</span>s</div>
   <div id="gameover" class="gameover">Cuba Lagi.</div>
 
   <!-- Pointer tukar kepada hand-cursor.png -->
@@ -254,7 +254,7 @@
         timeLeft++;
         timeDisplay.textContent = timeLeft;
 
-        if (timeLeft >= 180) {
+        if (timeLeft >= 30) {
           endGame("Cuba lagi");
         }
       }, 1000);
