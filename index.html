@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Permainan Rama-rama</title>
+  <title>RIME Permainan Rama-rama</title>
   <style>
     html, body {
       height: 100%;
@@ -136,7 +136,7 @@
 
   <div class="score">Skor: <span id="score">0</span></div>
   <div class="timer">Masa: <span id="time">180</span>s</div>
-  <div id="gameover" class="gameover">Game Over</div>
+  <div id="gameover" class="gameover">Cuba Lagi.</div>
 
   <!-- Pointer tukar kepada hand-cursor.png -->
   <img id="pointerImg" src="hand-cursor.png">
@@ -224,7 +224,7 @@
 
               // Tamat jika skor >= 10
               if (score >= 10) {
-                endGame();
+                endGame("TAHNIAH. Anda berjaya.");
               }
             }
           }
@@ -254,14 +254,15 @@
         timeLeft++;
         timeDisplay.textContent = timeLeft;
 
-        if (timeLeft >= 180 || score >= 10) {
-          endGame();
+        if (timeLeft >= 180) {
+          endGame("Cuba lagi");
         }
       }, 1000);
     }
 
-    function endGame() {
+    function endGame(message) {
       clearInterval(countdown);
+      gameOverText.textContent = message;
       gameOverText.style.display = 'block';
       gameActive = false;
       bgMusic.pause();
