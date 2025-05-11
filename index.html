@@ -10,19 +10,48 @@
       overflow: hidden;
       background: url('taman.jpg') no-repeat center center;
       background-size: cover;
+      font-family: sans-serif;
     }
-    .pointer { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; z-index: 9999; }
-    .obj { position: absolute; width: 64px; height: 64px; pointer-events: none; }
+    .pointer {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: red;
+      border-radius: 50%;
+      z-index: 9999;
+    }
+    .obj {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      pointer-events: none;
+    }
+    .score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+      z-index: 10000;
+    }
   </style>
 </head>
 <body>
+  <div class="score">Skor: <span id="score">0</span></div>
   <div id="pointer" class="pointer"></div>
   <img src="butterfly-tran.gif" class="obj" style="left:200px;top:200px;" data-id="1" data-action="move" />
+
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script>
     const pointer = document.getElementById('pointer');
     const objs = [...document.querySelectorAll('.obj')];
+    const scoreDisplay = document.getElementById('score');
+    let score = 0;
+
     const video = document.createElement('video');
     video.autoplay = true;
     video.playsInline = true;
@@ -58,6 +87,8 @@
             if (action === 'move') {
               el.style.left = Math.random() * window.innerWidth + 'px';
               el.style.top = Math.random() * window.innerHeight + 'px';
+              score += 1;
+              scoreDisplay.textContent = score;
             }
           }
         });
